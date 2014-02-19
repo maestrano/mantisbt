@@ -26,5 +26,12 @@
 	require_once( 'core.php' );
 
 	auth_logout();
+  
+  // Hook:Maestrano
+  $maestrano = MaestranoService::getInstance();
+  if ($maestrano->isSsoEnabled()) {
+    header("Location: " . $maestrano->getSsoLogoutUrl());
+    exit;
+  } 
 
 	print_header_redirect( config_get( 'logout_redirect_page' ), /* die */ true, /* sanitize */ false );
