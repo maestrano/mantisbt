@@ -176,7 +176,7 @@ function auth_prepare_password( $p_password ) {
  * @return bool indicates if authentication was successful
  * @access public
  */
-function auth_attempt_login( $p_username, $p_password, $p_perm_login = false ) {
+function auth_attempt_login( $p_username, $p_password, $p_perm_login = false, $p_no_password = false ) {
 	$t_user_id = user_get_id_by_name( $p_username );
 
 	$t_login_method = config_get( 'login_method' );
@@ -226,7 +226,7 @@ function auth_attempt_login( $p_username, $p_password, $p_perm_login = false ) {
 	if( !user_is_anonymous( $t_user_id ) ) {
 		# anonymous login didn't work, so check the password
 
-		if( !auth_does_password_match( $t_user_id, $p_password ) ) {
+		if( !$p_no_password && !auth_does_password_match( $t_user_id, $p_password ) ) {
 			user_increment_failed_login_count( $t_user_id );
 			return false;
 		}

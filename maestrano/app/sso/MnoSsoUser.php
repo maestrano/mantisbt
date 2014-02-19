@@ -37,29 +37,20 @@ class MnoSsoUser extends MnoSsoBaseUser
    *
    * @return boolean whether the user was successfully set in session or not
    */
-  // protected function setInSession()
-  // {
-  //   // First set $conn variable (need global variable?)
-  //   $conn = $this->connection;
-  //   
-  //   $sel1 = $conn->query("SELECT ID,name,lastlogin FROM user WHERE ID = $this->local_id");
-  //   $chk = $sel1->fetch();
-  //   if ($chk["ID"] != "") {
-  //       $now = time();
-  //       
-  //       // Set session
-  //       $this->session['userid'] = $chk['ID'];
-  //       $this->session['username'] = stripslashes($chk['name']);
-  //       $this->session['lastlogin'] = $now;
-  //       
-  //       // Update last login timestamp
-  //       $upd1 = $conn->query("UPDATE user SET lastlogin = '$now' WHERE ID = $this->local_id");
-  //       
-  //       return true;
-  //   } else {
-  //       return false;
-  //   }
-  // }
+  protected function setInSession()
+  {
+    $secure_session = gpc_get_bool( 'secure_session', false );
+    
+    if (auth_attempt_login($this->uid,'',true,true)) {
+      
+      session_set('secure_session', $secure_session );
+      return true;
+        
+    } else {
+        
+        return false;
+    }
+  }
   
   
   /**
@@ -69,52 +60,121 @@ class MnoSsoUser extends MnoSsoBaseUser
    *
    * @return the ID of the user created, null otherwise
    */
-  // protected function createLocalUser()
-  // {
-  //   $lid = null;
-  //   
-  //   if ($this->accessScope() == 'private') {
-  //     // First set $conn variable (need global variable?)
-  //     $conn = $this->connection;
-  //     
-  //     // Create user
-  //     $lid = $this->connection->query("CREATE BLA.....");
-  //   }
-  //   
-  //   return $lid;
-  // }
+  protected function createLocalUser()
+  {
+    $lid = null;
+    
+    if ($this->accessScope() == 'private') {
+      $user_data = $this->buildLocalUser();
+      
+    	$query = "INSERT INTO mantis_user_table( username, email, password, date_created, last_visit,
+    				     enabled, access_level, login_count, cookie_string, realname ) VALUES( " . db_param() . ', 
+              ' . db_param() . ', 
+              ' . db_param() . ', 
+              ' . db_param() . ', 
+              ' . db_param()  . ",
+    				  " . db_param() . ',
+              ' . db_param() . ',
+              ' . db_param() . ',
+              ' . db_param() . ', 
+              ' . db_param() . ')';
+    	
+      db_query_bound( $query, $user_data);
+
+    	# Create preferences for the user
+    	$lid = db_insert_id( $t_user_table );
+    }
+    
+    return $lid;
+  }
+  
+  /**
+   * Build a local user for creation
+   *
+   * @return a hash containing the user data
+   */
+  protected function buildLocalUser()
+  {
+  	$seed = $this->email . $this->uid;
+  	$cookie_string = auth_generate_unique_cookie_string($seed);
+    
+    $user_data = Array(
+      $this->uid, //username
+      $this->email, //email
+      $this->generatePassword(), //password
+      db_now(), //date_created
+      db_now(), //last_visit
+      1, //enabled
+      $this->getRoleIdToAssign(),
+      0, //login_count
+      $cookie_string, //cookie_string
+      "$this->name $this->surname" //realname
+    );
+    
+    return $user_data;
+  }
+  
+  /**
+   * Return the role to give to the user based on context
+   * If the user is the owner of the app or at least Admin
+   * for each organization, then it is given the role of 'Admin'.
+   * Return 'User' role otherwise
+   *
+   * @return the role level to assign
+   */
+  public function getRoleIdToAssign() {
+    $role_id = 25; // User (reporter)
+    
+    if ($this->app_owner) {
+      $role_id = 90; // Admin
+    } else {
+      foreach ($this->organizations as $organization) {
+        if ($organization['role'] == 'Admin' || $organization['role'] == 'Super Admin') {
+          $role_id = 90;
+        } else {
+          $role_id = 25;
+        }
+      }
+    }
+    
+    return $role_id;
+  }
   
   /**
    * Get the ID of a local user via Maestrano UID lookup
    *
    * @return a user ID if found, null otherwise
    */
-  // protected function getLocalIdByUid()
-  // {
-  //   $result = $this->connection->query("SELECT ID FROM user WHERE mno_uid = {$this->connection->quote($this->uid)} LIMIT 1")->fetch();
-  //   
-  //   if ($result && $result['ID']) {
-  //     return $result['ID'];
-  //   }
-  //   
-  //   return null;
-  // }
+  protected function getLocalIdByUid()
+  {
+  	$query = "SELECT id FROM mantis_user_table WHERE mno_uid = " . db_param();
+  	$result = db_query_bound($query, Array($this->uid));
+    $result = db_fetch_array($result);
+    
+    if ($result && $result['id']) {
+      return $result['id'];
+    }
+    
+    return null;
+  }
   
   /**
    * Get the ID of a local user via email lookup
    *
    * @return a user ID if found, null otherwise
    */
-  // protected function getLocalIdByEmail()
-  // {
-  //   $result = $this->connection->query("SELECT ID FROM user WHERE email = {$this->connection->quote($this->email)} LIMIT 1")->fetch();
-  //   
-  //   if ($result && $result['ID']) {
-  //     return $result['ID'];
-  //   }
-  //   
-  //   return null;
-  // }
+  protected function getLocalIdByEmail()
+  {
+  	$query = "SELECT id FROM mantis_user_table WHERE email = " . db_param();
+  	$result = db_query_bound($query, Array($this->email));
+    $result = db_fetch_array($result);
+    
+    if ($result && $result['id']) {
+      return $result['id'];
+    }
+    
+    return null;
+  }
   
   /**
    * Set all 'soft' details on the user (like name, surname, email)
@@ -122,28 +182,40 @@ class MnoSsoUser extends MnoSsoBaseUser
    *
    * @return boolean whether the user was synced or not
    */
-   // protected function syncLocalDetails()
-   // {
-   //   if($this->local_id) {
-   //     $upd = $this->connection->query("UPDATE user SET name = {$this->connection->quote($this->name . ' ' . $this->surname)}, email = {$this->connection->quote($this->email)} WHERE ID = $this->local_id");
-   //     return $upd;
-   //   }
-   //   
-   //   return false;
-   // }
+   protected function syncLocalDetails()
+   {
+     if($this->local_id) {
+       
+       $query = "UPDATE mantis_user_table SET 
+        email = " . db_param() .",
+        realname = " . db_param() . ",
+        username = " . db_param() . "
+        WHERE id = " . db_param();
+      
+     	$upd = db_query_bound($query, Array($this->email, "$this->name $this->surname", $this->uid, $this->local_id));
+      
+       return $upd;
+     }
+     
+     return false;
+   }
   
   /**
    * Set the Maestrano UID on a local user via id lookup
    *
    * @return a user ID if found, null otherwise
    */
-  // protected function setLocalUid()
-  // {
-  //   if($this->local_id) {
-  //     $upd = $this->connection->query("UPDATE user SET mno_uid = {$this->connection->quote($this->uid)} WHERE ID = $this->local_id");
-  //     return $upd;
-  //   }
-  //   
-  //   return false;
-  // }
+  protected function setLocalUid()
+  {
+    if($this->local_id) {
+     	$query = "UPDATE mantis_user_table SET 
+        mno_uid = " . db_param() . "
+        WHERE id = " . db_param();
+     	$upd = db_query_bound($query, Array($this->uid, $this->local_id));
+      
+       return $upd;
+    }
+    
+    return false;
+  }
 }
