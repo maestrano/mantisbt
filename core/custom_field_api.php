@@ -696,7 +696,7 @@ function custom_field_get_linked_ids( $p_project_id = ALL_PROJECTS ) {
 					LEFT JOIN $t_project_user_list_table pult
 						ON pult.project_id = cfpt.project_id AND pult.user_id = " . db_param() . "
 					, $t_user_table ut
-				WHERE ut.id = " . db_param() . "
+				WHERE ut.id = " . db_param() . " AND pt.mno_status!='ABANDONED' 
 					AND (  pt.view_state = " . VS_PUBLIC . "
 						OR pult.user_id = ut.id
 						";
@@ -1152,7 +1152,7 @@ function custom_field_distinct_values( $p_field_def, $p_project_id = ALL_PROJECT
 		$t_params[] = $p_field_def['id'];
 
 		if( ALL_PROJECTS != $p_project_id ) {
-			$t_from .= " JOIN $t_mantis_bug_table bt ON bt.id = cfst.bug_id";
+			$t_from .= " JOIN $t_mantis_bug_table bt ON bt.id = cfst.bug_id AND bt.mno_status!='ABANDONED'";
 			$t_where2 = 'AND bt.project_id = ' . db_param();
 			$t_params[] = $p_project_id;
 		} else {
@@ -1161,7 +1161,7 @@ function custom_field_distinct_values( $p_field_def, $p_project_id = ALL_PROJECT
 		$t_query = "
 			SELECT DISTINCT cfst.value
 			FROM $t_from
-			WHERE $t_where1 $t_where2
+			WHERE $t_where1 $t_where2 AND bt.mno_status!='ABANDONED' 
 			ORDER BY cfst.value";
 
 		$t_result = db_query_bound( $t_query, $t_params );

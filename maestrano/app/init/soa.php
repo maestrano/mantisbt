@@ -10,11 +10,11 @@ require_once MAESTRANO_ROOT . '/app/init/base.php';
 //-----------------------------------------------
 // Require your app specific files here
 //-----------------------------------------------
-if (!defined('APP_DIR')) {
+if (!defined('CL_ROOT')) {
 	define('APP_DIR', realpath(MAESTRANO_ROOT . '/../'));
 }
 chdir(APP_DIR);
-require_once APP_DIR . '/core.php';
+require APP_DIR . '/core.php';
 
 //-----------------------------------------------
 // Perform your custom preparation code

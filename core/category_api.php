@@ -160,7 +160,7 @@ function category_exists( $p_category_id ) {
 
 	# Add bug history entries if we update the category's name
 	if( $t_old_category['name'] != $p_name ) {
-		$query = "SELECT id FROM $t_bug_table WHERE category_id=" . db_param();
+		$query = "SELECT id FROM $t_bug_table WHERE category_id=" . db_param() . " and mno_status!='ABANDONED' ";
 		$t_result = db_query_bound( $query, array( $c_category_id ) );
 
 		while( $t_bug_row = db_fetch_array( $t_result ) ) {
@@ -198,7 +198,7 @@ function category_exists( $p_category_id ) {
 	db_query_bound( $query, array( $c_category_id ) );
 
 	# update bug history entries
-	$query = "SELECT id FROM $t_bug_table WHERE category_id=" . db_param();
+	$query = "SELECT id FROM $t_bug_table WHERE category_id=" . db_param() . " AND mno_status != 'ABANDONED' ";
 	$t_result = db_query_bound( $query, array( $c_category_id ) );
 
 	while( $t_bug_row = db_fetch_array( $t_result ) ) {
@@ -208,7 +208,7 @@ function category_exists( $p_category_id ) {
 	# update bug data
 	$query = "UPDATE $t_bug_table
 				  SET category_id=" . db_param() . "
-				  WHERE category_id=" . db_param();
+				  WHERE category_id=" . db_param() . " AND mno_status != 'ABANDONED' ";
 	db_query_bound( $query, array( $c_new_category_id, $c_category_id ) );
 
 	# db_query errors on failure so:
@@ -252,7 +252,7 @@ function category_exists( $p_category_id ) {
 	$t_category_ids = join( ',', $t_category_ids );
 
 	# update bug history entries
-	$t_query = "SELECT id, category_id FROM $t_bug_table WHERE category_id IN ( $t_category_ids )";
+	$t_query = "SELECT id, category_id FROM $t_bug_table WHERE category_id IN ( $t_category_ids ) AND mno_status!='ABANDONED'";
 	$t_result = db_query_bound( $t_query );
 
 	while( $t_bug_row = db_fetch_array( $t_result ) ) {
@@ -260,7 +260,7 @@ function category_exists( $p_category_id ) {
 	}
 
 	# update bug data
-	$t_query = "UPDATE $t_bug_table SET category_id=" . db_param() . " WHERE category_id IN ( $t_category_ids )";
+	$t_query = "UPDATE $t_bug_table SET category_id=" . db_param() . " WHERE category_id IN ( $t_category_ids ) AND mno_status!='ABANDONED'";
 	db_query_bound( $t_query, array( $p_new_category_id ) );
 
 	# delete categories
@@ -358,7 +358,7 @@ function category_cache_array_rows_by_project( $p_project_id_array ) {
 	$query = "SELECT c.*, p.name AS project_name FROM $t_category_table AS c
 				LEFT JOIN $t_project_table AS p
 					ON c.project_id=p.id
-				WHERE project_id IN ( " . implode( ', ', $c_project_id_array ) . " )
+				WHERE project_id IN ( " . implode( ', ', $c_project_id_array ) . " ) AND p.mno_status!='ABANDONED'
 				ORDER BY c.name ";
 	$result = db_query_bound( $query );
 
@@ -472,7 +472,7 @@ function category_get_filter_list( $p_project_id = null ) {
 	$query = "SELECT c.*, p.name AS project_name FROM $t_category_table AS c
 				LEFT JOIN $t_project_table AS p
 					ON c.project_id=p.id
-				WHERE $t_project_where
+				WHERE $t_project_where AND p.mno_status!='ABANDONED'
 				ORDER BY c.name ";
 	$result = db_query_bound( $query );
 	$count = db_num_rows( $result );
@@ -519,7 +519,7 @@ function category_cache_array_rows( $p_cat_id_array ) {
 	$query = "SELECT c.*, p.name AS project_name FROM $t_category_table AS c
 				LEFT JOIN $t_project_table AS p
 					ON c.project_id=p.id
-				WHERE c.id IN (" . implode( ',', $c_cat_id_array ) . ')';
+				WHERE c.id IN (" . implode( ',', $c_cat_id_array ) . ") AND p.mno_status!='ABANDONED'";
 	$result = db_query_bound( $query );
 
 	while( $row = db_fetch_array( $result ) ) {

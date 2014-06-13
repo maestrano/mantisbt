@@ -602,7 +602,7 @@ function mc_project_get_attachments( $p_username, $p_password, $p_project_id ) {
 		WHERE pft.project_id in (" . implode( ',', $t_projects ) . ") AND
 		( ( ( pt.view_state = $t_pub OR pt.view_state is null ) AND pult.user_id is null AND ut.access_level $t_access_clause ) OR
 		( ( pult.user_id = $t_user_id ) AND ( pult.access_level $t_access_clause ) ) OR
-		( ut.access_level = $t_admin ) )
+		( ut.access_level = $t_admin ) ) AND pt.mno_status!='ABANDONED'
 		ORDER BY pt.name ASC, pft.title ASC";
 	$result = db_query( $query );
 	$num_files = db_num_rows( $result );

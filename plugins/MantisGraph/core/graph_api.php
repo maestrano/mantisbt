@@ -586,7 +586,7 @@ function create_bug_enum_summary( $p_enum_string, $p_enum ) {
 	foreach ( $t_assoc_array as $t_value => $t_label  ) {
 		$query = "SELECT COUNT(*)
 					FROM $t_bug_table
-					WHERE $p_enum='$t_value' $specific_where";
+					WHERE $p_enum='$t_value' $specific_where AND mno_status!='ABANDONED'";
 		$result = db_query( $query );
 		$t_metrics[$t_label] = db_result( $result, 0 );
 	}
@@ -612,7 +612,7 @@ function enum_bug_group( $p_enum_string, $p_enum ) {
 		$query = "SELECT COUNT(*)
 					FROM $t_bug_table
 					WHERE $p_enum='$t_value' AND
-						status<'$t_res_val' $specific_where";
+						status<'$t_res_val' $specific_where AND mno_status!='ABANDONED'";
 		$result2 = db_query( $query );
 		$t_metrics['open'][$t_label] = db_result( $result2, 0, 0 );
 
@@ -620,7 +620,7 @@ function enum_bug_group( $p_enum_string, $p_enum ) {
 		$query = "SELECT COUNT(*)
 					FROM $t_bug_table
 					WHERE $p_enum='$t_value' AND
-						status>='$t_clo_val' $specific_where";
+						status>='$t_clo_val' $specific_where AND mno_status!='ABANDONED'";
 		$result2 = db_query( $query );
 		$t_metrics['closed'][$t_label] = db_result( $result2, 0, 0 );
 
@@ -629,7 +629,7 @@ function enum_bug_group( $p_enum_string, $p_enum ) {
 					FROM $t_bug_table
 					WHERE $p_enum='$t_value' AND
 						status>='$t_res_val'  AND
-						status<'$t_clo_val' $specific_where";
+						status<'$t_clo_val' $specific_where AND mno_status!='ABANDONED'";
 		$result2 = db_query( $query );
 		$t_metrics['resolved'][$t_label] = db_result( $result2, 0, 0 );
 	}
@@ -652,7 +652,7 @@ function create_developer_summary() {
 
 	$query = "SELECT handler_id, status
 				 FROM $t_bug_table
-				 WHERE handler_id > 0 $specific_where";
+				 WHERE handler_id > 0 $specific_where AND mno_status!='ABANDONED'";
 	$result = db_query_bound( $query );
 	$t_total_handled = db_num_rows( $result );
 
@@ -708,7 +708,7 @@ function create_reporter_summary() {
 
 	$query = "SELECT reporter_id
 				 FROM $t_bug_table
-				 WHERE $specific_where";
+				 WHERE $specific_where AND mno_status!='ABANDONED'";
 	$result = db_query_bound( $query );
 	$t_total_reported = db_num_rows( $result );
 
@@ -764,7 +764,7 @@ function create_category_summary() {
 		$t_cat_id = $row['id'];
 		$query = "SELECT COUNT(*)
 					FROM $t_bug_table
-					WHERE category_id=" . db_param() . " AND $specific_where";
+					WHERE category_id=" . db_param() . " AND $specific_where AND mno_status!='ABANDONED'";
 		$result2 = db_query_bound( $query, Array( $t_cat_id ) );
 		if ( isset($t_metrics[$t_cat_name]) ) {
 			$t_metrics[$t_cat_name] = $t_metrics[$t_cat_name] + db_result( $result2, 0, 0 );
@@ -793,7 +793,7 @@ function create_cumulative_bydate() {
 	# Get all the submitted dates
 	$query = "SELECT date_submitted
 				FROM $t_bug_table
-				WHERE $specific_where
+				WHERE $specific_where AND mno_status!='ABANDONED'
 				ORDER BY date_submitted";
 	$result = db_query_bound( $query );
 	$bug_count = db_num_rows( $result );
@@ -821,7 +821,7 @@ function create_cumulative_bydate() {
 						AND $t_bug_table.status >= '$t_res_val'
 						AND ( ( $t_history_table.new_value >= '$t_res_val'
 								AND $t_history_table.field_name = 'status' )
-						OR $t_history_table.id is NULL )
+						OR $t_history_table.id is NULL ) AND $t_bug_table.mno_status!='ABANDONED'
 			ORDER BY $t_bug_table.id, date_modified ASC";
 	$result = db_query( $query );
 	$bug_count = db_num_rows( $result );

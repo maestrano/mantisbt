@@ -189,7 +189,7 @@
 	$query = "SELECT DISTINCT project_id, pt.name as project_name
 		FROM $t_config_table as ct
 		JOIN $t_project_table as pt ON pt.id = ct.project_id
-		WHERE project_id!=0
+		WHERE project_id!=0 AND pt.mno_status!='ABANDONED'
 		ORDER BY project_name";
 	$t_result = db_query_bound( $query );
 	$t_projects_list[META_FILTER_NONE] = '[' . lang_get( 'any' ) . ']';
