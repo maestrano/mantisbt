@@ -74,7 +74,7 @@ function summary_print_by_enum( $p_enum ) {
 	$t_status_query = ( 'status' == $p_enum ) ? '' : ' ,status ';
 	$query = "SELECT COUNT(id) as bugcount, $p_enum $t_status_query
 				FROM $t_mantis_bug_table
-				WHERE $t_project_filter
+				WHERE $t_project_filter AND $t_mantis_bug_table.mno_status!='ABANDONED' 
 				GROUP BY $p_enum $t_status_query
 				ORDER BY $p_enum $t_status_query";
 	$result = db_query( $query );
@@ -221,7 +221,7 @@ function summary_new_bug_count_by_date( $p_time_length = 1 ) {
 
 	$query = "SELECT COUNT(*)
 				FROM $t_mantis_bug_table
-				WHERE " . db_helper_compare_days( "" . db_now() . "", "date_submitted", "<= $c_time_length" ) . " AND $specific_where";
+				WHERE " . db_helper_compare_days( "" . db_now() . "", "date_submitted", "<= $c_time_length" ) . " AND $specific_where AND $t_mantis_bug_table.mno_status!='ABANDONED' ";
 	$result = db_query_bound( $query );
 	return db_result( $result, 0 );
 }
@@ -253,7 +253,8 @@ function summary_resolved_bug_count_by_date( $p_time_length = 1 ) {
 				AND h.old_value < " . db_param() . "
 				AND h.new_value >= " . db_param() . "
 				AND " . db_helper_compare_days( "" . db_now() . "", "date_modified", "<= $c_time_length" ) . "
-				AND $specific_where";
+				AND $specific_where 
+                                AND b.mno_status!='ABANDONED'";
 	$result = db_query_bound( $query, Array( $t_resolved, $t_resolved, $t_resolved ) );
 	return db_result( $result, 0 );
 }
@@ -321,6 +322,7 @@ function summary_print_by_activity() {
 				WHERE h.bug_id = b.id
 				AND b.status < " . db_param() . "
 				AND $specific_where
+                                AND b.mno_status!='ABANDONED'
 				GROUP BY h.bug_id, b.id, b.summary, b.last_updated, b.view_state
 				ORDER BY count DESC, b.last_updated DESC";
 	$result = db_query_bound( $query, Array( $t_resolved ) );
@@ -376,6 +378,7 @@ function summary_print_by_age() {
 	$query = "SELECT * FROM $t_mantis_bug_table
 				WHERE status < $t_resolved
 				AND $specific_where
+                                AND mno_status!='ABANDONED'
 				ORDER BY date_submitted ASC, priority DESC";
 	$result = db_query( $query );
 
@@ -420,7 +423,7 @@ function summary_print_by_developer() {
 
 	$query = "SELECT COUNT(id) as bugcount, handler_id, status
 				FROM $t_mantis_bug_table
-				WHERE handler_id>0 AND $specific_where
+				WHERE handler_id>0 AND $specific_where AND mno_status!='ABANDONED'
 				GROUP BY handler_id, status
 				ORDER BY handler_id, status";
 	$result = db_query( $query );
@@ -521,7 +524,7 @@ function summary_print_by_reporter() {
 
 	$query = "SELECT reporter_id, COUNT(*) as num
 				FROM $t_mantis_bug_table
-				WHERE $specific_where
+				WHERE $specific_where AND mno_status!='ABANDONED'
 				GROUP BY reporter_id
 				ORDER BY num DESC";
 	$result = db_query( $query, $t_reporter_summary_limit );
@@ -537,7 +540,7 @@ function summary_print_by_reporter() {
 		$v_reporter_id = $t_reporter;
 		$query = "SELECT COUNT(id) as bugcount, status FROM $t_mantis_bug_table
 					WHERE reporter_id=$v_reporter_id
-					AND $specific_where
+					AND $specific_where AND mno_status!='ABANDONED'
 					GROUP BY status
 					ORDER BY status";
 		$result2 = db_query( $query );
@@ -604,7 +607,7 @@ function summary_print_by_category() {
 	$query = "SELECT COUNT(b.id) as bugcount, $t_project_query c.name AS category_name, category_id, b.status
 				FROM $t_mantis_bug_table b
 				JOIN $t_mantis_category_table AS c ON b.category_id=c.id
-				WHERE b.$specific_where
+				WHERE b.$specific_where AND b.mno_status!='ABANDONED'
 				GROUP BY $t_project_query c.name, b.category_id, b.status
 				ORDER BY $t_project_query c.name";
 
@@ -717,6 +720,7 @@ function summary_print_by_project( $p_projects = null, $p_level = 0, $p_cache = 
 	if( null === $p_cache ) {
 		$query = "SELECT project_id, status, COUNT( status ) AS bugcount
 					FROM $t_mantis_bug_table
+                                        WHERE mno_status!='ABANDONED'
 					GROUP BY project_id, status";
 
 		$result = db_query_bound( $query );
@@ -796,7 +800,7 @@ function summary_print_developer_resolution( $p_resolution_enum_string ) {
 	# Get all of the bugs and split them up into an array
 	$query = "SELECT COUNT(id) as bugcount, handler_id, resolution
 				FROM $t_mantis_bug_table
-				WHERE $specific_where
+				WHERE $specific_where AND mno_status!='ABANDONED'
 				GROUP BY handler_id, resolution
 				ORDER BY handler_id, resolution";
 	$result = db_query_bound( $query );
@@ -901,7 +905,7 @@ function summary_print_reporter_resolution( $p_resolution_enum_string ) {
 	# Get all of the bugs and split them up into an array
 	$query = "SELECT COUNT(id) as bugcount, reporter_id, resolution
 				FROM $t_mantis_bug_table
-				WHERE $specific_where
+				WHERE $specific_where AND mno_status!='ABANDONED'
 				GROUP BY reporter_id, resolution";
 	$result = db_query_bound( $query );
 
@@ -1021,7 +1025,7 @@ function summary_print_reporter_effectiveness( $p_severity_enum_string, $p_resol
 	# Get all of the bugs and split them up into an array
 	$query = "SELECT COUNT(id) as bugcount, reporter_id, resolution, severity
 				FROM $t_mantis_bug_table
-				WHERE $specific_where
+				WHERE $specific_where AND mno_status!='ABANDONED'
 				GROUP BY reporter_id, resolution, severity";
 	$result = db_query_bound( $query );
 

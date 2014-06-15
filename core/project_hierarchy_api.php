@@ -181,7 +181,7 @@ function project_hierarchy_cache( $p_show_disabled = false ) {
 				  FROM $t_project_table p
 				  LEFT JOIN $t_project_hierarchy_table ph
 				    ON ph.child_id = p.id
-				  WHERE $t_enabled_clause
+				  WHERE $t_enabled_clause AND p.mno_status!='ABANDONED'
 				  ORDER BY p.name";
 
 	$result = db_query_bound( $query, ( $p_show_disabled ? null : Array( true ) ) );

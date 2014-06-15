@@ -877,7 +877,7 @@ function user_get_accessible_projects( $p_user_id, $p_show_disabled = false ) {
 							    OR (p.view_state=" . db_param() . "
 								    AND
 							        u.user_id=" . db_param() . " )
-							)
+							) AND p.mno_status!='ABANDONED'
 			  ORDER BY p.name";
 		$result = db_query_bound( $query, ( $p_show_disabled ? Array( $p_user_id, $t_public, $t_private, $p_user_id ) : Array( $p_user_id, true, $t_public, $t_private, $p_user_id ) ) );
 
@@ -941,7 +941,7 @@ function user_get_accessible_subprojects( $p_user_id, $p_project_id, $p_show_dis
 					  LEFT JOIN $t_project_hierarchy_table ph
 					    ON ph.child_id = p.id
 					  WHERE $t_enabled_clause
-					  	 ph.parent_id IS NOT NULL
+					  	 ph.parent_id IS NOT NULL AND p.mno_status!='ABANDONED'
 					  ORDER BY p.name";
 		$result = db_query_bound( $query, ( $p_show_disabled ? null : Array( true ) ) );
 	} else {
@@ -956,9 +956,9 @@ function user_get_accessible_subprojects( $p_user_id, $p_project_id, $p_show_dis
 						( p.view_state=' . db_param() . '
 						    OR (p.view_state=' . db_param() . '
 							    AND
-						        u.user_id=' . db_param() . ' )
-						)
-					  ORDER BY p.name';
+						        u.user_id=' . db_param() . " )
+						) AND p.mno_status!='ABANDONED'
+					  ORDER BY p.name";
 		$result = db_query_bound( $query, ( $p_show_disabled ? Array( $p_user_id, $t_public, $t_private, $p_user_id ) : Array( $p_user_id, 1, $t_public, $t_private, $p_user_id ) ) );
 	}
 
@@ -1037,7 +1037,7 @@ function user_get_assigned_open_bug_count( $p_user_id, $p_project_id = ALL_PROJE
 				  FROM $t_bug_table
 				  WHERE $t_where_prj
 				  		status<'$t_resolved' AND
-				  		handler_id=" . db_param();
+				  		handler_id=" . db_param() . " AND mno_status!='ABANDONED' ";
 	$result = db_query_bound( $query, Array( $p_user_id ) );
 
 	return db_result( $result );
@@ -1056,7 +1056,7 @@ function user_get_reported_open_bug_count( $p_user_id, $p_project_id = ALL_PROJE
 				  FROM $t_bug_table
 				  WHERE $t_where_prj
 						  status<'$t_resolved' AND
-						  reporter_id=" . db_param();
+						  reporter_id=" . db_param() . " AND mno_status!='ABANDONED' ";
 	$result = db_query_bound( $query, Array( $p_user_id ) );
 
 	return db_result( $result );

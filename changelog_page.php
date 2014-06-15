@@ -179,6 +179,8 @@ foreach( $t_project_ids as $t_project_id ) {
 			LEFT JOIN $t_bug_table AS dbt ON dbt.id=rt.source_bug_id
 			WHERE sbt.project_id=" . db_param() . "
 			  AND sbt.fixed_in_version=" . db_param() . "
+                          AND sbt.mno_status != 'ABANDONED'
+                          AND dbt.mno_status != 'ABANDONED'
 			ORDER BY sbt.status ASC, sbt.last_updated DESC";
 
 		$t_description = version_get_field( $t_version_id, 'description' );

@@ -79,7 +79,7 @@ function project_cache_row( $p_project_id, $p_trigger_errors = true ) {
 
 	$query = "SELECT *
 				  FROM $t_project_table
-				  WHERE id=" . db_param();
+				  WHERE id=" . db_param() . " AND mno_status!='ABANDONED'";
 	$result = db_query_bound( $query, Array( $c_project_id ) );
 
 	if( 0 == db_num_rows( $result ) ) {
@@ -119,7 +119,7 @@ function project_cache_array_rows( $p_project_id_array ) {
 
 	$query = "SELECT *
 				  FROM $t_project_table
-				  WHERE id IN (" . implode( ',', $c_project_id_array ) . ')';
+				  WHERE id IN (" . implode( ',', $c_project_id_array ) . ") AND mno_status!='ABANDONED' ";
 	$result = db_query_bound( $query );
 
 	$t_projects_found = array();
@@ -145,8 +145,7 @@ function project_cache_all() {
 	if( !$g_cache_project_all ) {
 		$t_project_table = db_get_table( 'mantis_project_table' );
 
-		$query = "SELECT *
-					  FROM $t_project_table";
+		$query = "SELECT * FROM $t_project_table WHERE mno_status!='ABANDONED'";
 		$result = db_query_bound( $query );
 		$count = db_num_rows( $result );
 		for( $i = 0;$i < $count;$i++ ) {
@@ -212,7 +211,7 @@ function project_is_name_unique( $p_name ) {
 
 	$query = "SELECT COUNT(*)
 				 FROM $t_project_table
-				 WHERE name=" . db_param();
+				 WHERE name=" . db_param() . " AND mno_status='ABANDONED'";
 	$result = db_query_bound( $query, Array( $p_name ) );
 
 	if( 0 == db_result( $result ) ) {
@@ -315,8 +314,13 @@ function project_create( $p_name, $p_description, $p_status, $p_view_state = VS_
 
 	db_query_bound( $query, Array( $p_name, (int) $p_status, $c_enabled, (int) $p_view_state, $p_file_path, $p_description, $c_inherit_global ) );
 
+        $project_id = db_insert_id( $t_project_table );
+        
+        // MNO HOOK
+        push_project_to_maestrano($project_id);
+        
 	# return the id of the new project
-	return db_insert_id( $t_project_table );
+	return $project_id;
 }
 
 # --------------------
@@ -362,7 +366,7 @@ function project_delete( $p_project_id ) {
 	user_pref_delete_project( $p_project_id );
 
 	# Delete the project entry
-	$query = "DELETE FROM $t_project_table
+	$query = "UPDATE $t_project_table SET mno_status='ABANDONED'
 				  WHERE id=" . db_param();
 
 	db_query_bound( $query, Array( $c_project_id ) );
@@ -370,6 +374,9 @@ function project_delete( $p_project_id ) {
 	config_set_cache( 'enable_email_notification', $t_email_notifications, CONFIG_TYPE_INT );
 
 	project_clear_cache( $p_project_id );
+        
+        // MNO HOOK
+        push_project_to_maestrano($c_project_id);
 
 	# db_query errors on failure so:
 	return true;
@@ -412,10 +419,13 @@ function project_update( $p_project_id, $p_name, $p_description, $p_status, $p_v
 					file_path=" . db_param() . ",
 					description=" . db_param() . ",
 					inherit_global=" . db_param() . "
-				  WHERE id=" . db_param();
+				  WHERE id=" . db_param() . " AND mno_status!='ABANDONED'";
 	db_query_bound( $query, Array( $p_name, (int) $p_status, $c_enabled, (int) $p_view_state, $p_file_path, $p_description, $c_inherit_global, $p_project_id ) );
 
 	project_clear_cache( $p_project_id );
+        
+        // MNO HOOK
+        push_project_to_maestrano($p_project_id);
 
 	# db_query errors on failure so:
 	return true;
@@ -440,7 +450,7 @@ function project_copy_custom_fields( $p_destination_id, $p_source_id ) {
 function project_get_id_by_name( $p_project_name ) {
 	$t_project_table = db_get_table( 'mantis_project_table' );
 
-	$query = "SELECT id FROM $t_project_table WHERE name = " . db_param();
+	$query = "SELECT id FROM $t_project_table WHERE name = " . db_param() . " AND mno_status!='ABANDONED'";
 	$t_result = db_query_bound( $query, Array( $p_project_name ), 1 );
 
 	if( db_num_rows( $t_result ) == 0 ) {
@@ -675,6 +685,9 @@ function project_add_user( $p_project_id, $p_user_id, $p_access_level ) {
 
 	db_query_bound( $query, Array( $c_project_id, $c_user_id, $c_access_level ) );
 
+        // MNO HOOK
+        push_project_to_maestrano($c_project_id);
+        
 	# db_query errors on failure so:
 	return true;
 }
@@ -694,6 +707,9 @@ function project_update_user_access( $p_project_id, $p_user_id, $p_access_level 
 						user_id=" . db_param();
 
 	db_query_bound( $query, Array( $c_access_level, $c_project_id, $c_user_id ) );
+        
+        // MNO HOOK
+        push_project_to_maestrano($c_project_id);
 
 	# db_query errors on failure so:
 	return true;
@@ -723,6 +739,9 @@ function project_remove_user( $p_project_id, $p_user_id ) {
 
 	db_query_bound( $query, Array( $c_project_id, $c_user_id ) );
 
+        // MNO HOOK
+        push_project_to_maestrano($p_project_id);
+        
 	# db_query errors on failure so:
 	return true;
 }
@@ -752,6 +771,8 @@ function project_remove_all_users( $p_project_id, $p_access_level_limit = null )
 		db_query_bound( $query, Array( $c_project_id ) );
 	}
 
+        // MNO HOOK
+        push_project_to_maestrano($p_project_id);
 	# db_query errors on failure so:
 	return true;
 }
@@ -790,6 +811,8 @@ function project_copy_users( $p_destination_id, $p_source_id, $p_access_level_li
 			project_add_user( $p_destination_id, $t_row['user_id'], $t_destination_access_level );
 		}
 	}
+        
+        push_project_to_maestrano($p_destination_id);
 }
 
 # Delete all files associated with a project

@@ -161,7 +161,7 @@ function create_cumulative_bydate2() {
 	# Get all the submitted dates
 	$query = "SELECT date_submitted
 				FROM $t_bug_table
-				WHERE $specific_where
+				WHERE $specific_where AND mno_status!='ABANDONED'
 				ORDER BY date_submitted";
 	$result = db_query( $query );
 	$bug_count = db_num_rows( $result );
@@ -189,7 +189,7 @@ function create_cumulative_bydate2() {
 						AND $t_bug_table.status >= '$t_res_val'
 						AND ( ( $t_history_table.new_value >= '$t_res_val'
 								AND $t_history_table.field_name = 'status' )
-						OR $t_history_table.id is NULL )
+						OR $t_history_table.id is NULL ) AND $t_bug_table.mno_status!='ABANDONED'
 			ORDER BY $t_bug_table.id, date_modified ASC";
 	$result = db_query( $query );
 	$bug_count = db_num_rows( $result );

@@ -805,7 +805,7 @@ function tag_stats_related( $p_tag_id, $p_limit = 5 ) {
 					JOIN $t_bug_tag_table AS t
 						ON t.bug_id=b.id
 					WHERE ( p.access_level>b.view_state OR u.access_level>b.view_state )
-						AND t.tag_id=" . db_param();
+						AND t.tag_id=" . db_param() . " AND b.mno_status!='ABANDONED' ";
 
 	$query = "SELECT * FROM $t_bug_tag_table
 					WHERE tag_id != " . db_param() . "

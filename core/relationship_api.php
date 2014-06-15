@@ -328,7 +328,7 @@ function relationship_get_all_src( $p_src_bug_id ) {
 				$t_mantis_bug_table.project_id
 				FROM $t_mantis_bug_relationship_table
 				INNER JOIN $t_mantis_bug_table ON $t_mantis_bug_relationship_table.destination_bug_id = $t_mantis_bug_table.id
-				WHERE source_bug_id=" . db_param() . "
+				WHERE source_bug_id=" . db_param() . " AND $t_mantis_bug_table.mno_status != 'ABANDONED'
 				ORDER BY relationship_type, $t_mantis_bug_relationship_table.id";
 	$result = db_query_bound( $query, array( $c_src_bug_id ) );
 
@@ -372,7 +372,7 @@ function relationship_get_all_dest( $p_dest_bug_id ) {
 				$t_mantis_bug_table.project_id
 				FROM $t_mantis_bug_relationship_table
 				INNER JOIN $t_mantis_bug_table ON $t_mantis_bug_relationship_table.source_bug_id = $t_mantis_bug_table.id
-				WHERE destination_bug_id=" . db_param() . "
+				WHERE destination_bug_id=" . db_param() . " AND $t_mantis_bug_table.mno_status!='ABANDONED' 
 				ORDER BY relationship_type, $t_mantis_bug_relationship_table.id";
 	$result = db_query_bound( $query, Array( $c_dest_bug_id ) );
 

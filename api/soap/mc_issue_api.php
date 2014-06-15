@@ -496,7 +496,7 @@ function mc_issue_get_id_from_summary( $p_username, $p_password, $p_summary ) {
 
 	$query = "SELECT id
 		FROM $t_bug_table
-		WHERE summary = " . db_param();
+		WHERE summary = " . db_param() . " AND mno_status != 'ABANDONED'";
 
 	$result = db_query_bound( $query, Array( $p_summary ), 1 );
 

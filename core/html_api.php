@@ -1286,7 +1286,7 @@ function html_status_percentage_legend() {
 
 	$query = "SELECT status, COUNT(*) AS number
 				FROM $t_mantis_bug_table
-				WHERE $t_specific_where";
+				WHERE $t_specific_where AND mno_status!='ABANDONED'";
 	if ( !access_has_project_level( config_get( 'private_bug_threshold' ) ) ) {
 		$query .= ' AND view_state < ' . VS_PRIVATE;
 	}
