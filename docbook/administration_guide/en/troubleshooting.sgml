@@ -43,7 +43,7 @@
 									<programlisting>SELECT DISTINCT category_id
 FROM mantis_bug_table b
 LEFT OUTER JOIN mantis_category_table c ON category_id = c.id
-WHERE category_id &lt;&gt; 0
+WHERE category_id &lt;&gt; 0 AND b.mno_status!='ABANDONED'
 AND c.id IS NULL
 </programlisting>
 								</para>
@@ -68,7 +68,7 @@ AND c.id IS NULL
 								<programlisting>SELECT b.id, category_id
 FROM mantis_bug_table b
 LEFT OUTER JOIN mantis_category_table c ON category_id = c.id
-WHERE category_id &lt;&gt; 0
+WHERE category_id &lt;&gt; 0 AND b.mno_status!='ABANDONED'
 AND c.id IS NULL
 </programlisting>
 							</listitem>
@@ -82,7 +82,7 @@ AND c.id IS NULL
 									your favorite DB admin tool or with SQL, e.g.
 									<programlisting>UPDATE mantis_bug_table
 SET category_id = (NewCategoryId)
-WHERE category_id = (OldCategoryId)
+WHERE category_id = (OldCategoryId) AND mno_status!='ABANDONED'
 </programlisting>
 								</para>
 							</listitem>

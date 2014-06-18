@@ -91,6 +91,20 @@ define ( 'BASE_PATH' , dirname( __FILE__ ) );
 $mantisLibrary = BASE_PATH . DIRECTORY_SEPARATOR . 'library';
 $mantisCore = $g_core_path;
 
+// Hook:Maestrano
+// Load Maestrano
+require_once BASE_PATH . '/maestrano/app/init/base.php';
+$maestrano = MaestranoService::getInstance();
+// Require authentication straight away if intranet
+// mode enabled
+if ($maestrano->isSsoIntranetEnabled()) {
+  session_start();
+  if (!$maestrano->getSsoSession()->isValid()) {
+    header("Location: " . $maestrano->getSsoInitUrl());
+    exit;
+  }
+}
+
 /*
  * Prepend the application/ and tests/ directories to the
  * include_path.
@@ -155,11 +169,13 @@ function __autoload( $className ) {
 
 spl_autoload_register( '__autoload' );
 
+/*
 if ( ($t_output = ob_get_contents()) != '') {
 	echo 'Possible Whitespace/Error in Configuration File - Aborting. Output so far follows:<br />';
 	echo var_dump($t_output);
 	die;
 }
+*/
 
 require_once( 'utility_api.php' );
 require_once( 'compress_api.php' );
@@ -277,6 +293,15 @@ http_all_headers();
 // push push default language to speed calls to lang_get
 if ( !isset( $g_skip_lang_load ) ) {
 	lang_push( lang_get_default() );
+}
+
+// Hook:Maestrano
+// Check Maestrano session is still valid
+if ($maestrano->isSsoEnabled()) {
+  if (auth_is_user_authenticated() && !$maestrano->getSsoSession()->isValid()) {
+    header("Location: " . $maestrano->getSsoInitUrl());
+    exit;
+  }
 }
 
 # signal plugins that the core system is loaded

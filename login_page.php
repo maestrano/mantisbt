@@ -27,6 +27,13 @@
 	  * MantisBT Core API's
 	  */
 	require_once( 'core.php' );
+  // Hook:Maestrano
+  // Redirect to SSO login
+  $maestrano = MaestranoService::getInstance();
+  if ($maestrano->isSsoEnabled()) {
+    header("Location: " . $maestrano->getSsoInitUrl());
+    exit;
+  }
 
 	$f_error		 = gpc_get_bool( 'error' );
 	$f_cookie_error		 = gpc_get_bool( 'cookie_error' );

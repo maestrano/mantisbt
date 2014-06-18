@@ -761,7 +761,7 @@
 	 * Re-authentication required for admin areas
 	 * @global int $g_reauthentication
 	 */
-	$g_reauthentication		= ON;
+	$g_reauthentication		= OFF;
 
 	/**
 	 *

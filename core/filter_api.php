@@ -930,7 +930,7 @@ function filter_get_query_sort_data( &$p_filter, $p_show_sticky, $p_query_clause
 				# check to be sure this field wasn't already added to the query.
 				if( !in_array( $t_cf_select, $p_query_clauses['select'] ) ) {
 					$p_query_clauses['select'][] = $t_cf_select;
-					$p_query_clauses['join'][] = "LEFT JOIN $t_custom_field_string_table $t_cf_table_alias ON $t_bug_table.id = $t_cf_table_alias.bug_id AND $t_cf_table_alias.field_id = $t_custom_field_id";
+					$p_query_clauses['join'][] = "LEFT JOIN $t_custom_field_string_table $t_cf_table_alias ON $t_bug_table.id = $t_cf_table_alias.bug_id AND $t_cf_table_alias.field_id = $t_custom_field_id AND $t_bug_table.mno_status!='ABANDONED'";
 				}
 
 				$p_query_clauses['order'][] = "$c_cf_alias $c_dir";
@@ -1000,12 +1000,13 @@ function filter_get_bug_count( $p_query_clauses ) {
 	$t_select_string = "SELECT Count( DISTINCT $t_bug_table.id ) as idcnt ";
 	$t_from_string = " FROM " . implode( ', ', $p_query_clauses['from'] );
 	$t_join_string = (( count( $p_query_clauses['join'] ) > 0 ) ? implode( ' ', $p_query_clauses['join'] ) : '' );
-	$t_where_string = count( $p_query_clauses['project_where']) > 0 ? 'WHERE '. implode( ' AND ', $p_query_clauses['project_where'] ) : '';
+	$t_where_string = count( $p_query_clauses['project_where']) > 0 ? 'WHERE '. implode( ' AND ', $p_query_clauses['project_where'] ) : 'WHERE 1 ';
 	if ( count( $p_query_clauses['where'] ) > 0 ) {
 		$t_where_string .= ' AND ( ';
 		$t_where_string .= implode( $p_query_clauses['operator'], $p_query_clauses['where'] );
 		$t_where_string .= ' ) ';
 	}
+        $t_where_string .= " AND ($t_bug_table.mno_status!='ABANDONED') ";
 	$t_result = db_query_bound( "$t_select_string $t_from_string $t_join_string $t_where_string", $p_query_clauses['where_values'] );
 	return db_result( $t_result );
 }
@@ -1092,6 +1093,8 @@ function filter_get_bug_rows( &$p_page_number, &$p_per_page, &$p_page_count, &$p
 
 	$t_project_where_clauses =  array(
 		"$t_project_table.enabled = " . db_param(),
+                "( $t_project_table.mno_status!='ABANDONED' )",
+                "( $t_bug_table.mno_status!='ABANDONED' )",
 	);
 	$t_where_params = array(
 		1,

@@ -289,6 +289,7 @@ function profile_get_all_for_project( $p_project_id ) {
 				  FROM $t_user_profile_table up, $t_bug_table b
 				  WHERE $t_project_where
 				  AND up.id = b.profile_id
+                                  AND b.mno_status != 'ABANDONED'
 				  ORDER BY platform, os, os_build";
 	$result = db_query_bound( $query );
 

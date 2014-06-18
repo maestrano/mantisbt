@@ -850,7 +850,7 @@ function print_build_option_list( $p_build = '' ) {
 	# Get the "found in" build list
 	$query = "SELECT DISTINCT build
 				FROM $t_bug_table
-				WHERE $t_project_where
+				WHERE $t_project_where AND mno_status!='ABANDONED'
 				ORDER BY build DESC";
 	$result = db_query_bound( $query );
 	$option_count = db_num_rows( $result );
@@ -1076,7 +1076,7 @@ function print_project_user_list_option_list2( $p_user_id ) {
 				LEFT JOIN $t_mantis_project_user_list_table u
 				ON p.id=u.project_id AND u.user_id=" . db_param() . "
 				WHERE p.enabled = " . db_param() . " AND
-					u.user_id IS NULL
+					u.user_id IS NULL AND p.mno_status!='ABANDONED'
 				ORDER BY p.name";
 	$result = db_query_bound( $query, Array( $c_user_id, true ) );
 	$category_count = db_num_rows( $result );
@@ -1100,7 +1100,7 @@ function print_project_user_list( $p_user_id, $p_include_remove_link = true ) {
 				LEFT JOIN $t_mantis_project_user_list_table u
 				ON p.id=u.project_id
 				WHERE p.enabled = '1' AND
-					u.user_id=" . db_param() . "
+					u.user_id=" . db_param() . " AND p.mno_status!='ABANDONED'
 				ORDER BY p.name";
 	$result = db_query_bound( $query, Array( $c_user_id ) );
 	$category_count = db_num_rows( $result );

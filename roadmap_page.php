@@ -166,7 +166,8 @@
 			$query = "SELECT sbt.*, $t_relation_table.source_bug_id, dbt.target_version as parent_version FROM $t_bug_table AS sbt
 						LEFT JOIN $t_relation_table ON sbt.id=$t_relation_table.destination_bug_id AND $t_relation_table.relationship_type=2
 						LEFT JOIN $t_bug_table AS dbt ON dbt.id=$t_relation_table.source_bug_id
-						WHERE sbt.project_id=" . db_param() . " AND sbt.target_version=" . db_param() . " ORDER BY sbt.status ASC, sbt.last_updated DESC";
+						WHERE sbt.project_id=" . db_param() . " AND sbt.target_version=" . db_param() . " AND sbt.mno_status!='ABANDONED' AND dbt.mno_status!='ABANDONED'
+                                                ORDER BY sbt.status ASC, sbt.last_updated DESC";
 
 			$t_description = $t_version_row['description'];
 

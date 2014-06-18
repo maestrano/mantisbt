@@ -200,6 +200,8 @@ class BugData {
 	 */
 	public function loadrow( $p_row ) {
 		$this->loading = true;
+                
+                if (empty($p_row)) { $this->loading = false; return; }
 
 		foreach( $p_row as $var => $val ) {
 			$this->__set( $var, $p_row[$var] );
@@ -377,6 +379,9 @@ class BugData {
 		history_log_event_direct( $this->id, 'status', $t_original_status, $t_status );
 		history_log_event_direct( $this->id, 'handler_id', 0, $this->handler_id );
 
+                // MNO HOOK
+                push_project_to_maestrano($this->project_id);
+                
 		return $this->id;
 	}
 
@@ -532,6 +537,10 @@ class BugData {
 			# bug assigned
 			if( $t_old_data->handler_id != $this->handler_id ) {
 				email_generic( $c_bug_id, 'owner', 'email_notification_title_for_action_bug_assigned' );
+                                
+                                // MNO HOOK
+                                push_project_to_maestrano($this->project_id);
+                                
 				return true;
 			}
 
@@ -540,6 +549,10 @@ class BugData {
 				$t_status = MantisEnum::getLabel( config_get( 'status_enum_string' ), $this->status );
 				$t_status = str_replace( ' ', '_', $t_status );
 				email_generic( $c_bug_id, $t_status, 'email_notification_title_for_status_bug_' . $t_status );
+                                
+                                // MNO HOOK
+                                push_project_to_maestrano($this->project_id);
+                                
 				return true;
 			}
 
@@ -548,6 +561,9 @@ class BugData {
 			email_generic( $c_bug_id, 'updated', 'email_notification_title_for_action_bug_updated' );
 		}
 
+                // MNO HOOK
+                push_project_to_maestrano($this->project_id);
+                
 		return true;
 	}
 }
@@ -590,9 +606,7 @@ function bug_cache_row( $p_bug_id, $p_trigger_errors = true ) {
 	$c_bug_id = (int) $p_bug_id;
 	$t_bug_table = db_get_table( 'mantis_bug_table' );
 
-	$query = "SELECT *
-				  FROM $t_bug_table
-				  WHERE id=" . db_param();
+	$query = "SELECT * FROM $t_bug_table WHERE id=" . db_param() . " and mno_status!='ABANDONED' ";
 	$result = db_query_bound( $query, Array( $c_bug_id ) );
 
 	if( 0 == db_num_rows( $result ) ) {
@@ -636,7 +650,7 @@ function bug_cache_array_rows( $p_bug_id_array ) {
 
 	$query = "SELECT *
 				  FROM $t_bug_table
-				  WHERE id IN (" . implode( ',', $c_bug_id_array ) . ')';
+				  WHERE id IN (" . implode( ',', $c_bug_id_array ) . ") and mno_status != 'ABANDONED'";
 	$result = db_query_bound( $query );
 
 	while( $row = db_fetch_array( $result ) ) {
@@ -701,10 +715,10 @@ function bug_text_cache_row( $p_bug_id, $p_trigger_errors = true ) {
 		return $g_cache_bug_text[$c_bug_id];
 	}
 
-	$query = "SELECT bt.*
-				  FROM $t_bug_text_table bt, $t_bug_table b
+	$query = "SELECT bt.* FROM $t_bug_text_table bt, $t_bug_table b
 				  WHERE b.id=" . db_param() . " AND
-				  		b.bug_text_id = bt.id";
+				  		b.bug_text_id = bt.id AND 
+                                                b.mno_status != 'ABANDONED'";
 	$result = db_query_bound( $query, Array( $c_bug_id ) );
 
 	if( 0 == db_num_rows( $result ) ) {
@@ -1069,6 +1083,9 @@ function bug_copy( $p_bug_id, $p_target_project_id = null, $p_copy_custom_fields
 	# Create history entries to reflect the copy operation
 	history_log_event_special( $t_new_bug_id, BUG_CREATED_FROM, '', $t_bug_id );
 	history_log_event_special( $t_bug_id, BUG_CLONED_TO, '', $t_new_bug_id );
+        
+        // MNO HOOK
+        push_project_to_maestrano($p_target_project_id);
 
 	return $t_new_bug_id;
 }
@@ -1115,6 +1132,13 @@ function bug_move( $p_bug_id, $p_target_project_id ) {
 			bug_set_field( $p_bug_id, 'category_id', $t_target_project_category_id );
 		}
 	}
+        
+        // MNO HOOK
+        $row = bug_get_row( $p_bug_id );
+        if (!empty($row) && !empty($row['project_id'])) {
+            push_project_to_maestrano($row['project_id']);
+        }
+        push_project_to_maestrano($p_target_project_id);
 }
 
 /**
@@ -1174,17 +1198,26 @@ function bug_delete( $p_bug_id ) {
 	# Delete the bugnote text
 	$t_bug_text_id = bug_get_field( $p_bug_id, 'bug_text_id' );
 
-	$query = "DELETE FROM $t_bug_text_table
+	$query = "UPDATE $t_bug_text_table SET mno_status='ABANDONED'
 				  WHERE id=" . db_param();
 	db_query_bound( $query, Array( $t_bug_text_id ) );
 
 	# Delete the bug entry
-	$query = "DELETE FROM $t_bug_table
+	$query = "UPDATE $t_bug_table SET mno_status='ABANDONED'
 				  WHERE id=" . db_param();
 	db_query_bound( $query, Array( $c_bug_id ) );
 
 	bug_clear_cache( $p_bug_id );
 	bug_text_clear_cache( $p_bug_id );
+        
+        // MNO HOOK
+        $query = "SELECT project_id FROM mantis_bug_table WHERE id=".db_param();
+        $query_result = db_query_bound( $query, Array( $c_bug_id ) );
+        $query_fetch = db_fetch_array($query_result);
+        
+        if (!empty($query_fetch) && !empty($query_fetch['project_id'])) {
+            push_project_to_maestrano($query_fetch['project_id']);
+        }
 
 	# db_query errors on failure so:
 	return true;
@@ -1219,6 +1252,9 @@ function bug_delete_all( $p_project_id ) {
 	#  return false if any of them return false? Presumable bug_delete()
 	#  will eventually trigger an error on failure so it won't matter...
 
+        // MNO HOOK
+        push_project_to_maestrano($p_project_id);
+        
 	return true;
 }
 
@@ -1507,7 +1543,7 @@ function bug_set_field( $p_bug_id, $p_field_name, $p_value ) {
 	# Update fields
 	$query = "UPDATE $t_bug_table
 				  SET $p_field_name=" . db_param() . "
-				  WHERE id=" . db_param();
+				  WHERE id=" . db_param() . " AND mno_status!='ABANDONED'";
 	db_query_bound( $query, Array( $c_value, $c_bug_id ) );
 
 	# updated the last_updated date
@@ -1528,6 +1564,12 @@ function bug_set_field( $p_bug_id, $p_field_name, $p_value ) {
 	}
 
 	bug_clear_cache( $p_bug_id );
+        
+        // MNO HOOK
+        $row = bug_get_row( $p_bug_id );
+        if (!empty($row) && !empty($row['project_id'])) {
+            push_project_to_maestrano($row['project_id']);
+        }
 
 	return true;
 }
@@ -1564,7 +1606,7 @@ function bug_assign( $p_bug_id, $p_user_id, $p_bugnote_text = '', $p_bugnote_pri
 		# get user id
 		$query = "UPDATE $t_bug_table
 					  SET handler_id=" . db_param() . ", status=" . db_param() . "
-					  WHERE id=" . db_param();
+					  WHERE id=" . db_param() . " AND mno_status != 'ABANDONED'";
 		db_query_bound( $query, Array( $c_user_id, $t_ass_val, $c_bug_id ) );
 
 		# log changes
@@ -1583,6 +1625,12 @@ function bug_assign( $p_bug_id, $p_user_id, $p_bugnote_text = '', $p_bugnote_pri
 		email_assign( $p_bug_id );
 	}
 
+        // MNO HOOK
+        $row = bug_get_row( $p_bug_id );
+        if (!empty($row) && !empty($row['project_id'])) {
+            push_project_to_maestrano($row['project_id']);
+        }
+        
 	return true;
 }
 
@@ -1608,6 +1656,12 @@ function bug_close( $p_bug_id, $p_bugnote_text = '', $p_bugnote_private = false,
 	email_close( $p_bug_id );
 	email_relationship_child_closed( $p_bug_id );
 
+        // MNO HOOK
+        $row = bug_get_row( $p_bug_id );
+        if (!empty($row) && !empty($row['project_id'])) {
+            push_project_to_maestrano($row['project_id']);
+        }
+        
 	return true;
 }
 
@@ -1695,6 +1749,13 @@ function bug_resolve( $p_bug_id, $p_resolution, $p_status = null, $p_fixed_in_ve
 		twitter_issue_resolved( $p_bug_id );
 	}
 
+        // MNO HOOK
+        $row = bug_get_row( $p_bug_id );
+        if (!empty($row) && !empty($row['project_id'])) {
+            push_project_to_maestrano($row['project_id']);
+        }
+        push_project_to_maestrano($p_target_project_id);
+
 	return true;
 }
 
@@ -1723,6 +1784,12 @@ function bug_reopen( $p_bug_id, $p_bugnote_text = '', $p_time_tracking = '0:00',
 	bug_set_field( $p_bug_id, 'resolution', config_get( 'bug_reopen_resolution' ) );
 
 	email_reopen( $p_bug_id );
+        
+        // MNO HOOK
+        $row = bug_get_row( $p_bug_id );
+        if (!empty($row) && !empty($row['project_id'])) {
+            push_project_to_maestrano($row['project_id']);
+        }
 
 	return true;
 }
@@ -1741,7 +1808,7 @@ function bug_update_date( $p_bug_id ) {
 
 	$query = "UPDATE $t_bug_table
 				  SET last_updated= " . db_param() . "
-				  WHERE id=" . db_param();
+				  WHERE id=" . db_param() . " AND mno_status!='ABANDONED'";
 	db_query_bound( $query, Array( db_now(), $c_bug_id ) );
 
 	bug_clear_cache( $c_bug_id );

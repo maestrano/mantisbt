@@ -85,7 +85,7 @@
 		FROM $t_bug_table b, $t_sponsor_table s
 		WHERE s.user_id=" . db_param() . " AND s.bug_id = b.id " .
 		( $t_show_all ? '' : 'AND ( b.status < ' . db_param() . ' OR s.paid < ' . SPONSORSHIP_PAID . ')' ) . "
-		AND $t_project_clause
+		AND $t_project_clause AND b.mno_status != 'ABANDONED' 
 		ORDER BY s.paid ASC, b.project_id ASC, b.fixed_in_version ASC, b.status ASC, b.id DESC";
 
 	$result = db_query_bound( $query, $t_show_all ? Array( $t_user ) : Array( $t_user , $t_resolved ) );
@@ -193,7 +193,7 @@
 		FROM $t_bug_table b, $t_sponsor_table s
 		WHERE b.handler_id=" . db_param() . " AND s.bug_id = b.id " .
 		( $t_show_all ? '' : 'AND ( b.status < ' . db_param() . ' OR s.paid < ' . SPONSORSHIP_PAID . ')' ) . "
-		AND $t_project_clause
+		AND $t_project_clause AND b.mno_status!='ABANDONED'
 		ORDER BY s.paid ASC, b.project_id ASC, b.fixed_in_version ASC, b.status ASC, b.id DESC";
 
 	$result = db_query_bound( $query, $t_show_all ? Array( $t_user ) : Array( $t_user , $t_resolved ) );
