@@ -81,8 +81,21 @@ class MnoSsoUser extends MnoSsoBaseUser
     	
       db_query_bound( $query, $user_data);
 
+      
+      
     	# Create preferences for the user
     	$lid = db_insert_id( $t_user_table );
+        
+        $language = config_get_global( 'fallback_language' );
+        $language = empty($language) ? 'english' : $language;
+	$default_timezone = config_get_global( 'default_timezone' );
+        $default_timezone = empty($default_timezone) ? 'Australia/Sydney' : $default_timezone;
+        
+        # Insert user prefences
+        $role = $this->getRoleIdToAssign();
+        $pref_query = "INSERT INTO `mantis_user_pref_table` (`user_id`, `project_id`, `default_profile`, `default_project`, `refresh_delay`, `redirect_delay`, `bugnote_order`, `email_on_new`, `email_on_assigned`, `email_on_feedback`, `email_on_resolved`, `email_on_closed`, `email_on_reopened`, `email_on_bugnote`, `email_on_status`, `email_on_priority`, `email_on_priority_min_severity`, `email_on_status_min_severity`, `email_on_bugnote_min_severity`, `email_on_reopened_min_severity`, `email_on_closed_min_severity`, `email_on_resolved_min_severity`, `email_on_feedback_min_severity`, `email_on_assigned_min_severity`, `email_on_new_min_severity`, `email_bugnote_limit`, `language`, `timezone`) VALUES
+        ({$lid}, 0, 0, 0, 30, 2, 'ASC', 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '{$language}', '{$default_timezone}');";
+        db_query_bound($pref_query);
     }
     
     return $lid;
