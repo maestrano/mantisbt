@@ -57,6 +57,11 @@ try {
         // to create a new local user
         if (is_null($sso_user->local_id)) {
           $sso_user->createLocalUserOrDenyAccess();
+          
+          if ($sso_user->local_id) {
+              $mno_entity = new MnoSoaEntity();
+              $mno_entity->getProjectUpdates(0);
+          }
         }
         
         // If user is matched then sign it in

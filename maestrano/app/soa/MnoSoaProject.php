@@ -46,6 +46,13 @@ class MnoSoaProject extends MnoSoaBaseProject
         $mno_project_id_obj = MnoSoaDB::getMnoIdByLocalId($this->_local_project_id, "PROJECTS", "PROJECTS");
         $this->_id = (MnoSoaDB::isValidIdentifier($mno_project_id_obj)) ? $mno_project_id_obj->_id : null;
         
+        if (empty($this->_id)) {
+            $this->_start_date = ((string) time()) . '000';
+            if (!empty($_SESSION['mno_uid'])) {
+                $this->_project_owner = $_SESSION['mno_uid'];
+            }
+        }
+        
         MnoSoaLogger::debug("project=".json_encode($project));
     }
     
@@ -159,7 +166,7 @@ class MnoSoaProject extends MnoSoaBaseProject
                 $project_user_list_record = db_fetch_array($project_user_list_result);
                 
                 if (!$project_user_list_record) {
-                    $project_user_list_upsert_query = " INSERT INTO mantis_project_user_list_table (project_id, user_id, mno_status) VALUES ('{$this->_local_project_id}', '{$local_stakeholder_id}', '{$local_stakeholder_status}') ";
+                    $project_user_list_upsert_query = " INSERT INTO mantis_project_user_list_table (project_id, user_id, access_level, mno_status) VALUES ('{$this->_local_project_id}', '{$local_stakeholder_id}', '90', '{$local_stakeholder_status}') ";
                 } else {
                     $project_user_list_upsert_query = " UPDATE mantis_project_user_list_table SET mno_status='{$local_stakeholder_status}' WHERE project_id='{$this->_local_project_id}' and user_id='{$local_stakeholder_id}' ";
                 }
@@ -335,7 +342,7 @@ class MnoSoaProject extends MnoSoaBaseProject
                     $local_status = $this->map_status_to_local_format($status, $local_task_id);
                     // TO DO - ADD BUG TEXT INSERTION/UPDATE FUNCTION
                     $tasklists_query = "UPDATE mantis_bug_table "
-                                     . "SET summary='$name', mno_status='$status', date_submitted='$start_date', handler_id='$local_assignedTo_user_id', status='$local_status', mno_tasklist_id='$mno_tasklist_id' "
+                                     . "SET summary='$name', mno_status='$status', date_submitted='$start_date', handler_id='$local_assignedTo_user_id', status='$local_status', mno_tasklist_id='$mno_tasklist_id', last_updated=unix_timestamp(now()) "
                                      . "WHERE id='$local_task_id' ";
                     db_query_bound($tasklists_query);
                 } else if (MnoSoaDB::isNewIdentifier($local_task_id_obj)) {
@@ -348,8 +355,8 @@ class MnoSoaProject extends MnoSoaBaseProject
                     // TO DO - ADD BUG TEXT INSERTION/UPDATE FUNCTION
                     $bug_text_id = "";
                     $tasklists_query = "INSERT INTO mantis_bug_table "
-                                     . "(project_id, reporter_id, handler_id, bug_text_id, os, os_build, platform, version, fixed_in_version, build, summary, target_version, date_submitted, mno_status, status, mno_tasklist_id ) "
-                                     . "VALUES ('{$this->_local_project_id}', '$local_assignedTo_user_id', '$local_assignedTo_user_id', '$bug_text_id', '', '', '', '', '', '', '$name', '', '$start_date', '$status', '$local_status', '$mno_tasklist_id') ";
+                                     . "(project_id, reporter_id, handler_id, bug_text_id, os, os_build, platform, version, fixed_in_version, build, summary, target_version, date_submitted, mno_status, status, mno_tasklist_id, last_updated ) "
+                                     . "VALUES ('{$this->_local_project_id}', '$local_assignedTo_user_id', '$local_assignedTo_user_id', '$bug_text_id', '', '', '', '', '', '', '$name', '', '$start_date', '$status', '$local_status', '$mno_tasklist_id', unix_timestamp(now())) ";
                     db_query_bound($tasklists_query);
                     $local_task_id = db_insert_id("mantis_bug_table");
                     MnoSoaDB::addIdMapEntry($local_task_id, "TASKS", $mno_task_id, "TASKS");
